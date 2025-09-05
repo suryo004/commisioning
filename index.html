@@ -1,39 +1,179 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Embed Canva Desain</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #f0f0f0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .embed-wrapper {
-      position: relative;
-      width: 90%;
-      max-width: 800px;
-      padding-top: 56.25%; /* Rasio 16:9 */
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .embed-wrapper iframe {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      border: none;
-    }
-  </style>
+  <title>Form Commissioning Mesin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-  <div class="embed-wrapper">
-    <iframe src="https://www.canva.com/design/DAGw5n3Azs4/R_sF0P1cnEdqtqtzHGhJPw/view?embed"
-            allowfullscreen loading="lazy"></iframe>
+  <div class="container py-3">
+    <div class="card shadow-lg mx-auto" style="max-width: 700px;">
+      <div class="card-header bg-primary text-white">📋 Form Commissioning Mesin</div>
+      <div class="card-body">
+        <form id="commissioningForm" class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Nama Teknisi</label>
+            <select id="teknisi" class="form-select" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Nama Uker</label>
+            <select id="uker" class="form-select" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">PIC</label>
+            <input type="text" id="pic" class="form-control" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">No HP PIC</label>
+            <input type="text" id="hp" class="form-control" readonly>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Alamat</label>
+            <textarea id="alamat" class="form-control" rows="2" readonly></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Jenis Mesin</label>
+            <select id="jenisMesin" class="form-select" required>
+              <option value="Mesin Antrian">Mesin Antrian</option>
+              <option value="Mesin Detector Valas">Mesin Detector Valas</option>
+              <option value="Mesin Sortir Uang">Mesin Sortir Uang</option>
+              <option value="Mesin Hitung Uang Portable">Mesin Hitung Uang Portable</option>
+              <option value="Mesin Hitung Uang Standing">Mesin Hitung Uang Standing</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Serial Number</label>
+            <input type="text" id="serial" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Status Commissioning</label>
+            <select id="status" class="form-select" required>
+              <option value="Belum">Belum</option>
+              <option value="Proses">Proses</option>
+              <option value="Selesai">Selesai</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Catatan Teknis</label>
+            <textarea id="catatan" class="form-control" rows="3"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Upload Foto</label>
+            <input type="file" id="foto" class="form-control" multiple>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="col-12 d-none" id="progressWrapper">
+            <label class="form-label">Progress Upload</label>
+            <div class="progress">
+              <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                   role="progressbar" style="width: 0%">0%</div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <button type="submit" class="btn btn-success">✅ Submit</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
+
+  <script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx8meFRoyooodaepcHSYQCzVNh7q93lPtkZUoV8xeFsaeKS7KHNj7zNfTT-CIgBtfak/exec"; // ganti dengan URL Web App kamu
+    let ukerData = [];
+
+    async function loadData() {
+      let resUker = await fetch(WEB_APP_URL + "?action=getUkerData");
+      ukerData = await resUker.json();
+      let ukerSelect = document.getElementById("uker");
+      ukerSelect.innerHTML = "<option value=''>-- Pilih Uker --</option>";
+      ukerData.forEach(u => {
+        ukerSelect.innerHTML += `<option value="${u.uker}">${u.uker}</option>`;
+      });
+
+      let resTek = await fetch(WEB_APP_URL + "?action=getTeknisiData");
+      let teknisiData = await resTek.json();
+      let tekSelect = document.getElementById("teknisi");
+      tekSelect.innerHTML = "<option value=''>-- Pilih Teknisi --</option>";
+      teknisiData.forEach(t => {
+        tekSelect.innerHTML += `<option value="${t}">${t}</option>`;
+      });
+
+      ukerSelect.addEventListener("change", () => {
+        let selected = ukerData.find(u => u.uker === ukerSelect.value);
+        if (selected) {
+          document.getElementById("pic").value = selected.pic;
+          document.getElementById("hp").value = selected.hp;
+          document.getElementById("alamat").value = selected.alamat;
+        }
+      });
+    }
+
+    document.getElementById("commissioningForm").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      let fotoInput = document.getElementById("foto");
+      let uploadedUrls = [];
+      let totalFiles = fotoInput.files.length;
+
+      // tampilkan progress
+      let progressWrapper = document.getElementById("progressWrapper");
+      let progressBar = document.getElementById("progressBar");
+      if (totalFiles > 0) {
+        progressWrapper.classList.remove("d-none");
+        progressBar.style.width = "0%";
+        progressBar.innerText = "0%";
+      }
+
+      for (let i = 0; i < totalFiles; i++) {
+        let formData = new FormData();
+        formData.append("file", fotoInput.files[i]);
+        formData.append("fileName", fotoInput.files[i].name);
+        formData.append("uker", document.getElementById("uker").value);
+
+        let res = await fetch(WEB_APP_URL, { method: "POST", body: formData });
+        let data = await res.json();
+        uploadedUrls.push(data.fileUrl);
+
+        // update progress
+        let percent = Math.round(((i+1) / totalFiles) * 100);
+        progressBar.style.width = percent + "%";
+        progressBar.innerText = percent + "%";
+      }
+
+      // simpan form
+      const formObj = {
+        teknisi: document.getElementById("teknisi").value,
+        uker: document.getElementById("uker").value,
+        pic: document.getElementById("pic").value,
+        hp: document.getElementById("hp").value,
+        alamat: document.getElementById("alamat").value,
+        jenisMesin: document.getElementById("jenisMesin").value,
+        serial: document.getElementById("serial").value,
+        status: document.getElementById("status").value,
+        catatan: document.getElementById("catatan").value,
+        fotoUrls: uploadedUrls
+      };
+
+      let resSave = await fetch(WEB_APP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formObj)
+      });
+      let result = await resSave.json();
+
+      alert(result.message);
+
+      // reset form & progress
+      e.target.reset();
+      progressWrapper.classList.add("d-none");
+      progressBar.style.width = "0%";
+      progressBar.innerText = "0%";
+    });
+
+    loadData();
+  </script>
 </body>
 </html>
